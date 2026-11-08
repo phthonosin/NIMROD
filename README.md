@@ -70,6 +70,9 @@ chmod +x nimrod-start.sh
 
 # Launch the NIMROD agent
 python3 nimrod.py
+
+# or type this in terminal 
+nimrod 
 ```
 
 ---
