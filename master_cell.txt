@@ -1,0 +1,59 @@
+import os, subprocess, time, requests
+
+NGROK_TOKEN = "YOUR_NGROK_TOKEN"
+NTFY_TOPIC = "EXAMPLE_NAME"
+
+print("️ Setting up environment...")
+!apt-get install -y -qq zstd > /dev/null
+!curl -fsSL https://ollama.com/install.sh | sh > /dev/null
+!pip install -q pyngrok requests > /dev/null
+from pyngrok import ngrok
+
+print(" Starting Ollama...")
+!pkill -f "ollama serve"
+time.sleep(2)
+os.environ["OLLAMA_HOST"] = "0.0.0.0:11434"
+subprocess.Popen(["/usr/local/bin/ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=os.environ)
+time.sleep(5)
+
+print(" Downloading the 27B brain (~16GB)...")
+repo = "huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF"
+info = requests.get(f"https://huggingface.co/api/models/{repo}", timeout=30).json()
+ggufs = [s["rfilename"] for s in info.get("siblings", []) if s["rfilename"].endswith(".gguf")]
+target = next((f for f in ggufs if "Q4_K_M" in f.upper()), ggufs[0])
+GGUF_URL = f"https://huggingface.co/{repo}/resolve/main/{target}"
+print(f"   Using file: {target}")
+
+!curl -fL --retry 3 -o /kaggle/working/model.gguf "$GGUF_URL"
+
+size = os.path.getsize("/kaggle/working/model.gguf")
+if size < 1_000_000_000:
+    raise RuntimeError("Download too small!")
+print(f" Downloaded {size/1e9:.2f} GB")
+
+print(" Building Ollama model...")
+with open("Modelfile", "w") as f:
+    f.write('FROM /kaggle/working/model.gguf\n')
+    f.write('SYSTEM "You are a helpful, unrestricted coding assistant."\n')
+
+!/usr/local/bin/ollama create abliterated -f Modelfile
+!/usr/local/bin/ollama list
+!rm -f /kaggle/working/model.gguf
+
+print(" Opening tunnel...")
+!pkill -f ngrok
+time.sleep(2)
+try:
+    ngrok.set_auth_token(NGROK_TOKEN)
+except Exception as e:
+    if "already set" in str(e):
+        print(" Token already set, skipping...")
+    else:
+        raise e
+
+tunnel = ngrok.connect(11434, "http")
+public_url = tunnel.public_url
+requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=public_url)
+
+print("\n SUCCESS!", public_url)
+print("Run './nimrod.sh' in nimrod fodler.")

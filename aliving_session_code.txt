@@ -1,0 +1,17 @@
+#to make the session awake
+
+import time, subprocess
+
+print(" Keep-alive started. Session will stay awake until you stop it.")
+while True:
+    # Bonus: watchdog that restarts Ollama if it ever crashes
+    r = subprocess.run(["/usr/local/bin/ollama", "list"], capture_output=True)
+    if r.returncode != 0:
+        subprocess.Popen(
+            ["/usr/local/bin/ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print(" Ollama crashed — restarted it.")
+    print(f" Alive at {time.ctime()}", flush=True)
+    time.sleep(600)  # heartbeat every 10 minutes
