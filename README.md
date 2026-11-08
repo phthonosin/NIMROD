@@ -28,7 +28,7 @@ This project uses a distributed inference architecture to provide flagship-level
 
 ### Step 1: Configure the Kaggle Inference Cell
 
-Create a new Kaggle Notebook and paste the provided master cell code. This handles environment setup, model download, Ollama initialization, and tunnel creation.
+Create a new Kaggle Notebook and paste the provided master cell code AND aliving session code. This handles environment setup, model download, Ollama initialization, and tunnel creation.
 
 > **CRITICAL:** Replace `YOUR_NGROK_TOKEN` and `EXAMPLE_NAME` in the first cell with your actual credentials before running. Ensure **Internet** is enabled in Kaggle Notebook Settings.
 
